@@ -1,0 +1,214 @@
+* {
+    padding: 0;
+    margin: 0;
+    font-family: 'Droid Sans', sans-serif;
+}
+
+.status {
+    text-align: center;
+}
+
+
+button,
+input,
+div,
+p,
+label {
+    font-size: 5mm;
+}
+
+label,
+select,
+input {
+    display: block;
+    width: 100%;
+    margin: 8px 0;
+    
+}
+
+
+input[type='checkbox'] {
+    clear: both;
+    float: left;
+    width: 12mm;
+}
+
+select,
+input {
+    border: none;
+    background: #e8e2e1;
+    color: #000;
+    font-size: 5mm;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+}
+
+/* hides the spin-button for firefox */
+input[type=number] {
+    -moz-appearance:textfield;
+}
+
+/* hides the spin-button for chrome*/
+input[type=date]::-webkit-outer-spin-button,
+input[type=date]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input:invalid {
+    background-color: #ffe2e1;
+}
+
+input.icon {
+    background-position: 6px 4px;
+}
+
+input[type='submit'],
+button {
+    display: block-inline;
+    text-align: left;
+    border: 1px solid #1a1a1a;
+    background-color: #222222;
+    margin: 4px 0;
+    cursor: pointer;
+    border-radius: 3mm;
+    -moz-border-radius: 3mm;
+    -webkit-border-radius: 3mm;
+    color: #fff;
+}
+
+select:focus,
+input:focus {
+    outline: none;
+}
+
+.button-group {
+    display: block;
+    width: 100%;
+}
+
+.button-group input,
+.button-group button {
+    margin: 0px;
+    display: inline-block;
+    width: auto;
+}
+
+button.icon {
+    background-position: 4px 4px;
+}
+
+
+ul {
+    list-style: none;
+    padding: 0;
+    min-height: 10em;
+}
+
+ul a {
+    text-decoration: none;
+}
+
+ul li {
+    color: #000;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    border-top: 1px dotted #ddd;
+    text-shadow: 0px 0px 4px #fff;
+}
+
+ul li.selected {
+    border-top: 1px solid #888;
+}
+
+ul li.selected,
+#users .details {
+    background-color: #eef;
+}
+
+#users .details {
+    padding: 4px 12px;
+    border-top: 1px dotted #ddd;
+    border-bottom: 1px solid #888;
+}
+
+#profile,
+#login {
+    margin-bottom: 8px;
+}
+
+
+#profile .home,
+#users .home {
+    overflow: hidden;
+    overflow-x: auto;
+}
+
+section,
+aside {
+    display: block;
+    width: 100%;
+}
+
+section {
+    margin-bottom: 10mm;
+}
+
+li,
+li.icon,
+input,
+input.icon,
+button,
+button.icon,
+div.icon,
+select,
+select.icon,
+option,
+option.icon,
+label {
+    -webkit-appearance: none;
+    line-height: 8mm;
+    padding: 2mm 6mm 2mm 12mm;
+    background-position: 2mm 2mm;
+    background-size: 8mm;
+}
+
+
+div.icon,
+input[type='search'] {
+    padding-right: 3mm;
+}
+
+header {
+    background: #222222;
+    color: #fff;
+}
+
+container {
+    display: block;
+    max-width: 60em;
+    margin: 0 auto;
+    padding: 8px;
+
+}
+
+content {
+    display: block;
+}
+
+@media screen and (min-width:52em) {
+    aside {
+        float: right;
+        width: 20em;
+    }
+    content {
+        margin-right: 22em;
+        max-width: 100%;
+    }
+}
+

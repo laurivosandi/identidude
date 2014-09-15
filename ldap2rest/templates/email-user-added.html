@@ -1,0 +1,19 @@
+<html>
+    <head></head>
+    <body>
+        <h>Teile on lisatud kasutajakonto</h>
+
+        <p>Teile on lisatud asutuses {{ domain.description }} järgnev kasutajakonto, selle abil saate asutuse arvutites sisse logida.</p>
+
+        <p>Kasutajanimi: <b>{{ username }}</b></p>
+        <p>Parool: <b>{{ password }}</b></p>
+
+        <p>Palun vahetage parool kohe välja meie <a href="http://ldap.povi.ee/">arvutipargi haldusliideses</a> ning kontrollige, et seal oleks korrektsed kontaktandmed. Sealt leiab ka täpsemad juhised kuidas kodusest arvutist võrgukettale ligi pääseda.</p>
+
+        {% if local_helpdesk %}
+        <p>Kui teil esineb tõrkeid arvutite kasutamisel palun pöörduge oma kohaliku IT tugiisiku  <a href="mailto:{{ local_helpdesk.email}}?subject=Tõrked kasutajakontoga {{ username }}">{{ local_helpdesk.name}}</a> poole.</p>
+        {% endif %}
+
+        <p>Kui teil on probleeme arvutisse sisselogimisega või esineb tõrkeid võrguketta kasutamisel võite otse pöörduda serveripargi hooldaja <a href="mailto:{{server_helpdesk.email}}?subject=Tõrked kasutajakontoga {{ username }}">{{ server_helpdesk.name}}</a> poole.</p>
+    </body>
+</html>

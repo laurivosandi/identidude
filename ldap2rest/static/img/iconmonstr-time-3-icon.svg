@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- The icon can be used freely in both personal and commercial projects with no attribution required, but always appreciated. 
+You may NOT sub-license, resell, rent, redistribute or otherwise transfer the icon without express written permission from iconmonstr.com -->
+
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 width="512px" height="512px" viewBox="0 0 512 512" enable-background="new 0 0 512 512" xml:space="preserve">
+<path id="time-3-icon" d="M256,50C142.229,50,50,142.229,50,256c0,113.77,92.229,206,206,206c113.77,0,206-92.23,206-206
+	C462,142.229,369.77,50,256,50z M256,417c-88.977,0-161-72.008-161-161c0-88.979,72.008-161,161-161c88.977,0,161,72.007,161,161
+	C417,344.977,344.992,417,256,417z M382.816,265.785c1.711,0.297,2.961,1.781,2.961,3.518v0.093c0,1.72-1.223,3.188-2.914,3.505
+	c-37.093,6.938-124.97,21.35-134.613,21.35c-13.808,0-25-11.192-25-25c0-9.832,14.79-104.675,21.618-143.081
+	c0.274-1.542,1.615-2.669,3.181-2.669h0.008c1.709,0,3.164,1.243,3.431,2.932l18.933,119.904L382.816,265.785z"/>
+</svg>
