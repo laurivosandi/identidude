@@ -1,4 +1,5 @@
 import base64
+import falcon
 import ldap
 import re
 import textwrap
@@ -13,7 +14,10 @@ class LookupResource:
 
     @serialize
     def on_get(self, req, resp):
-        codes = set([j for j in req.get_param("ids").split(",") if re.match("[3-6]\d{10}", j)])
+        ids = req.get_param("ids")
+        if isinstance(ids, basestring):
+            ids = ids.split(",")
+        codes = set([j for j in ids if re.match("[3-6]\d{10}", j)])
 
         if not codes:
             raise falcon.HTTPBadRequest("No id codes specified")

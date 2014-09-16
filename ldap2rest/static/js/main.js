@@ -47,6 +47,12 @@ function onUserListLoaded(status, users) {
     } else {
         $("#users .status").hide();
     }
+    
+    $("#users .back").unbind().click(function() {
+        $("content section").hide();
+        $("#add-user").hide();
+        $("#domains").show();
+    });
 }
 
 function onDomainsLoaded(domains) {
@@ -84,7 +90,9 @@ function onLogin(status, me) {
     
     onProfileLoaded(200, me);
     
-    $("section").hide();
+    $("content section").hide();
+    $("#sidepanel").show();
+    $("#home").show();
     $("#profile").show();
     
     $.ajax({
@@ -262,9 +270,14 @@ $(document).ready(function() {
     }
 
     $("#add-user .id-lookup").change(function() {
+        $("#add-user .id-lookup").addClass("busy");
+        $("#add-user .name").val("");
+        $("#add-user .e-mail").val("");
+        $("#add-user .mobile").val("");
         $("#add-user .extra").fadeIn();
         var id = $(this).val();
         ldap.lookup(id, function(status, details) {
+            $("#add-user .id-lookup").removeClass("busy");
             if (id in details) {
                 $("#add-user .name").val(details[id].gn + " " + details[id].sn);
                 $("#add-user .user").val(details[id].username);
@@ -275,6 +288,16 @@ $(document).ready(function() {
     });
     
     $("#add-user .name").change(onAddUserNameChanged);
+    
+    $("#add-user .e-mail").change(function() {
+        if ($(this).val() == "") {
+            $("#add-user-notify").prop('disabled', true);
+            $("#add-user-notify").prop('checked', false);
+        } else {
+            $("#add-user-notify").prop('disabled', false);
+            $("#add-user-notify").prop('checked', true);
+        }
+    });
 
     
     // Bind form submission button
@@ -299,6 +322,10 @@ $(document).ready(function() {
     $("#change-password .back").click(function() {
         $("content section").hide();
         $("#home").show();
+    });
+    
+    $("#users .back").click(function() {
+        
     });
     
     $("#users .details .lock").click(function() {

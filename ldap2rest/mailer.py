@@ -1,6 +1,7 @@
 import jinja2
 import os
 import smtplib
+from time import sleep
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
@@ -25,20 +26,26 @@ class Mailer(object):
             self.server.login(self.username, self.password)
         
     def enqueue(self, sender, recipients, subject, template, **context):
-        for key, value in context.items():
-            print key, "=>", type(value), value
-        if isinstance(recipients, list) or isinstance(recipients, tuple):
-            for recipient in recipients:
-                assert isinstance(recipient, basestring), "Invalid recipient: %s (%s)" % (recipient, type(recipient))
-            recipients = ", ".join(recipients)
-
-        assert isinstance(recipients, str), "Invalid recipient: %s" % recipients
-        assert isinstance(sender, str)
+        backoff = 1
+        while True:
+            try:
+                self.send(sender, recipients, subject, template, **context)
+                return
+            except smtplib.SMTPServerDisconnected:
+                print("Connection to %s unexpectedly closed, probably TCP timeout, backing off for %d second" % (self.server, backoff))
+                self.reconnect()
+                backoff = backoff * 2
+                sleep(backoff)
+        
+    def send(self, sender, recipients, subject, template, **context):
+        assert isinstance(sender, basestring)
+        
+        print "Sending e-mail to:", recipients
 
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
         msg["From"] = sender
-        msg["To"] = recipients
+        msg["To"] = ", ".join(recipients) if  isinstance(recipients, list) or isinstance(recipients, tuple) else recipients
         
         text = self.env.get_template(template + ".txt").render(context).encode("utf-8")
         html = self.env.get_template(template + ".html").render(context).encode("utf-8")

@@ -4,6 +4,7 @@ import re
 import Cookie
 from datetime import datetime
 from util import domain2dn, dn2domain, generate_token, serialize
+from forms import validate
 from settings import BASE_DOMAIN, LDAP_SERVER, COOKIE_LIFETIME, ADMINS
 
 def auth(func):
@@ -92,9 +93,11 @@ class SessionResource:
         return profile
 
     @serialize
+    @validate("username",  r"[a-z][a-z0-9]{1,31}$", required=True)
+    @validate("password",  r"[A-Za-z0-9@#$%^&+=]{8,}$") 
     def on_post(self, req, resp):
-        username = req.get_param("username")
-        password = req.get_param("password")
+        username = req.get_param("username").encode("ascii")
+        password = req.get_param("password").encode("ascii")
         
         if not username or not password:
             raise falcon.HTTPUnauthorized("Error", "No username or password supplied")

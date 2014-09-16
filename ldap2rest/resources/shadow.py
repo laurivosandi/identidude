@@ -1,5 +1,6 @@
 # encoding: utf-8
 
+import falcon
 import ldap
 import re
 import settings
@@ -11,7 +12,8 @@ class PasswordResource:
     def __init__(self, conn, mailer):
         self.conn = conn
         self.mailer = mailer
-    
+
+    @auth
     @serialize
     def on_put(self, req, resp, domain, username):
         """
@@ -27,11 +29,12 @@ class PasswordResource:
             email = attributes.get(settings.LDAP_USER_ATTRIBUTE_RECOVERY_EMAIL, [""]).pop()
             break
         else:
+            print "No such user: %s" % username
             raise falcon.HTTPNotFound()
 
         recipients = [settings.ADMIN_EMAIL]
-        if "@" in email:
-            recipients.append(email)
+#        if "@" in email:
+#            recipients.append(email)
             
         self.mailer.enqueue(
             settings.ADMIN_EMAIL,
@@ -46,6 +49,7 @@ class PasswordResource:
         self.conn.passwd_s(dn_user, None, temporary_password)
         return dict(description="Password successfully reset", recipients=recipients)
 
+    @auth
     @serialize
     @validate("password",  r"[A-Za-z0-9@#$%^&+=]{8,}$")
     @validate("confirm",   r"[A-Za-z0-9@#$%^&+=]{8,}$")
@@ -61,8 +65,11 @@ class PasswordResource:
             email = attributes.get(settings.LDAP_USER_ATTRIBUTE_RECOVERY_EMAIL, [""]).pop()
             break
         else:
+            print "No such user %s" % username
             raise falcon.HTTPNotFound()
 
+    @auth
+    @serialize
     def on_delete(self, req, resp, domain, username):
         """
         Lock account

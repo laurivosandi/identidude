@@ -18,7 +18,7 @@ def validate(key, regex, message=None, required=True):
     def decorate(func):
         def wrapped(instance, req, resp, *args, **kwargs):
             value = req.get_param(key) or ""
-            assert isinstance(value, str), "Parameter %s of invalid type %s" % (key, type(value))
+            assert isinstance(value, unicode), "Parameter %s of invalid type %s, expected unicode" % (key, type(value))
             if not value and required:
                 raise falcon.HTTPBadRequest("Error", "No parameter %s specified" % key)
             if value and regex and not regex.match(value):

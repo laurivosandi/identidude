@@ -14,7 +14,7 @@ class GroupResource:
         args = "ou=groups," + domain2dn(settings.BASE_DOMAIN), ldap.SCOPE_ONELEVEL, "objectClass=posixGroup", group_fields
         groups = dict()
         for dn, attributes in self.conn.search_s(*args):
-            description = attributes.get("description").pop()
+            description = attributes.get("description").pop().decode("utf-8")
             m = re.match("cn=(?P<name>[a-z][a-z0-9]+),ou=groups,(?P<dn>.+)$", dn)
             name, dn = m.groups()
             if name in groups:

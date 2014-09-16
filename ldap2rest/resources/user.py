@@ -35,16 +35,16 @@ class UserListResource:
             cn, dcs = m.groups()
             users[dn] = dict(
                 id = attributes.get(settings.LDAP_USER_ATTRIBUTE_ID, [None]).pop(),
-                recovery_email = settings.LDAP_USER_ATTRIBUTE_RECOVERY_EMAIL,
+                recovery_email = attributes.get(settings.LDAP_USER_ATTRIBUTE_RECOVERY_EMAIL, [""]).pop(),
                 domain = dn2domain(dcs),
                 born = attributes.get("dateOfBirth", [None]).pop(),
                 username = attributes.get("uid").pop(),
                 uid = int(attributes.get("uidNumber").pop()),
                 gid = int(attributes.get("gidNumber").pop()),
                 home = attributes.get("homeDirectory").pop(),
-                givenName = attributes.get("gn", [None]).pop(),
-                sn = attributes.get("sn", [None]).pop(),
-                cn = attributes.get("cn").pop(),
+                givenName = attributes.get("gn", [""]).pop().decode("utf-8"),
+                sn = attributes.get("sn", [""]).pop().decode("utf-8"),
+                cn = attributes.get("cn").pop().decode("utf-8"),
                 modified = datetime.strptime(attributes.get("modifyTimestamp").pop(), "%Y%m%d%H%M%SZ"))
         return users
 
@@ -57,13 +57,13 @@ class UserListResource:
     def on_post(self, req, resp, domain=settings.BASE_DOMAIN):
         fullname = req.get_param("cn")
         username = req.get_param("username")
-        print type(fullname), fullname, type(username), username
-        home = settings.HOME(username, domain)
         first_name, last_name  = fullname.rsplit(" ", 1)
+
+        home = settings.HOME(username, domain).encode("utf-8")
         initial_password = generate_password(8)
         
-        dn_user = "cn=%s,ou=people,%s" % (fullname, domain2dn(domain))
-        dn_group = "cn=%s,ou=groups,%s" % (username, domain2dn(domain))
+        dn_user = "cn=%s,ou=people,%s" % (fullname.encode("utf-8"), domain2dn(domain))
+        dn_group = "cn=%s,ou=groups,%s" % (username.encode("utf-8"), domain2dn(domain))
         
         # Make sure we're not getting hacked
         RESERVED_GROUPS = set(["root", "audio", "video", "wheel", "sudo", \
@@ -123,18 +123,19 @@ class UserListResource:
                             local_helpdesk = {"email": admin_email, "name": attributes.get("cn").pop().decode("utf-8")}
 
             # Add the related user himself
-            if req.get_param("email"):
+            if req.get_param("email") and req.get_param("notify"):
                 recipients.append(req.get_param("email"))
                             
-
         ldif_user = modlist.addModlist({
-            settings.LDAP_USER_ATTRIBUTE_ID: req.get_param("id") or [],
-            settings.LDAP_USER_ATTRIBUTE_RECOVERY_EMAIL: req.get_param("email"),
-            "uid": username,
+            settings.LDAP_USER_ATTRIBUTE_ID: req.get_param("id", "").encode("utf-8") or [],
+            settings.LDAP_USER_ATTRIBUTE_RECOVERY_EMAIL: req.get_param("email", "").encode("utf-8"),
+            "employeeType": req.get_param("group").encode("utf-8"),
+            "uid": username.encode("utf-8"),
             "uidNumber": str(uid),
             "gidNumber": str(uid),
-            "sn": last_name,
-            "givenName": first_name,
+            "sn": last_name.encode("utf-8"),
+            "givenName": first_name.encode("utf-8"),
+            "mobile": req.get_param("mobile").encode("utf-8"),
             "preferredLanguage": "en_US",
             "homeDirectory": home,
             "loginShell": "/bin/bash",
@@ -143,10 +144,10 @@ class UserListResource:
 
         ldif_group = modlist.addModlist(dict(
             objectClass = ['top', 'posixGroup'],
-            memberUid = [username],
+            memberUid = [username.encode("utf-8")],
             gidNumber = str(uid),
-            cn = username,
-            description = "Group of user %s" % fullname))
+            cn = username.encode("utf-8"),
+            description = ("Group of user %s" % fullname).encode("utf-8")))
             
         ldif_ou_people = modlist.addModlist(dict(
             objectClass = ["organizationalUnit"],
@@ -169,7 +170,7 @@ class UserListResource:
             pass
 
         try:
-            print "Adding user:", dn_user, ldif_user
+            print "Adding user:", repr(dn_user), ldif_user
             self.conn.add_s(dn_user, ldif_user)
         except ldap.ALREADY_EXISTS:
             raise falcon.HTTPConflict("Error", "User with such full name already exists")
@@ -178,14 +179,19 @@ class UserListResource:
         self.conn.passwd_s(dn_user, None, initial_password)
 
         try:
-            print "Adding group:", dn_group, ldif_group
-            self.conn.add_s(dn_group, ldif_group)
+            print "Adding group:", repr(dn_group), ldif_group
+            if not req.get_param("dry"):
+                self.conn.add_s(dn_group, ldif_group)
         except ldap.ALREADY_EXISTS:
             raise falcon.HTTPConflict("Error", "Group corresponding to the username already exists")
 
         if req.get_param("group"):
-            ldif = (ldap.MOD_ADD, 'memberUid', username),
-            self.conn.modify_s("cn=%s,ou=groups,%s" % (req.get_param("group"), domain2dn(settings.BASE_DOMAIN)), ldif)
+            ldif = (ldap.MOD_ADD, 'memberUid', username.encode("utf-8")),
+            if not req.get_param("dry"):
+                try:
+                    self.conn.modify_s(("cn=%s,ou=groups,%s" % (req.get_param("group"), domain2dn(settings.BASE_DOMAIN))).encode("utf-8"), ldif)
+                except ldap.TYPE_OR_VALUE_EXISTS: # TODO: Remove from group upon user removal
+                    pass
 
         if self.mailer:
             self.mailer.enqueue(
@@ -206,6 +212,7 @@ class UserListResource:
             username = username,
             uid = uid,
             gid = uid,
+            initial_password = initial_password,
             first_name = first_name,
             last_name = last_name,
             home = home)

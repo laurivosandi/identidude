@@ -1,8 +1,8 @@
 import ldap
 import re
+import falcon
 from resources.auth import auth
 from util import serialize, domain2dn, dn2domain
-
 import settings
 
 
@@ -31,14 +31,14 @@ class ProfileResource:
         return dict(
             id=attributes.get(settings.LDAP_USER_ATTRIBUTE_ID, [None]).pop(),
             domain = dn2domain(dcs),
-            born = attributes.get("dateOfBirth", [None]).pop(),
+            born = attributes.get("dateOfBirth", [""]).pop(),
             username = attributes.get("uid").pop(),
             uid = int(attributes.get("uidNumber").pop()),
             gid = int(attributes.get("gidNumber").pop()),
             home = attributes.get("homeDirectory").pop(),
-            givenName = attributes.get("gn", [None]).pop(),
-            sn = attributes.get("sn", [None]).pop(),
-            cn = attributes.get("cn").pop(),
+            givenName = attributes.get("gn", [""]).pop().decode("utf-8"),
+            sn = attributes.get("sn", [""]).pop().decode("utf-8"),
+            cn = attributes.get("cn").pop().decode("utf-8"),
             modified = datetime.strptime(attributes.get("modifyTimestamp").pop(), "%Y%m%d%H%M%SZ"))
 
     def on_post(self, req, resp, domain=settings.BASE_DOMAIN, username=None):
@@ -59,7 +59,7 @@ class ProfileResource:
 
         # Delete group if necessary
         try:
-            self.conn.delete_s("cn=asd%s,ou=groups,%s" % (username, domain2dn(domain)))
+            self.conn.delete_s("cn=%s,ou=groups,%s" % (username, domain2dn(domain)))
         except ldap.NO_SUCH_OBJECT:
             pass
         except ldap.LDAPError, e:

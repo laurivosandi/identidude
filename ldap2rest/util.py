@@ -56,7 +56,7 @@ def serialize(func):
             buf = req.stream.read(req.content_length)
             if req.get_header("content-type") == "application/x-www-form-urlencoded":
                 for key, value in urlparse.parse_qs(buf).items():
-                    req._params[key] = value[0]
+                    req._params[key] = value[0].decode("utf-8")
             elif req.get_header("content-type") == "application/json":
                 try:
                     body = json.loads(buf, encoding='utf-8')
@@ -70,11 +70,10 @@ def serialize(func):
             else:
                 raise falcon.HTTPError(falcon.HTTP_400,
                     "Unknown content type",
-                    "Could not understand content type ",
-                    req.get_header("content-type"),
-                    "of the body of the request")
+                    "Could not understand content type %s of the body of the request" % req.get_header("content-type"))
 
         r = func(instance, req, resp, **kwargs)
+
         if not resp.body:
             if not req.client_accepts_json:
                 raise falcon.HTTPUnsupportedMediaType(

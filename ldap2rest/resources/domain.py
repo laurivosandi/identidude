@@ -13,7 +13,7 @@ class DomainListResource:
         args = domain2dn(settings.BASE_DOMAIN), ldap.SCOPE_SUBTREE, "objectClass=domain", keys
         domains = dict()
         for dn, attributes in self.conn.search_s(*args):
-            domains[dn2domain(dn)] = attributes.get("description", [None]).pop()
+            domains[dn2domain(dn)] = attributes.get("description", [""]).pop().decode("utf-8")
         return domains
         
     @serialize
