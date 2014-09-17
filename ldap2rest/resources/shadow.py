@@ -33,13 +33,15 @@ class PasswordResource:
             raise falcon.HTTPNotFound()
 
         recipients = [settings.ADMIN_EMAIL]
-#        if "@" in email:
-#            recipients.append(email)
+        
+        # Send to user himself aswell
+        if "@" in email:
+            recipients.append(email)
             
         self.mailer.enqueue(
             settings.ADMIN_EMAIL,
             recipients,
-            "Teie parool on lähtestatud",
+            u"Kasutaja %s parool on lähtestatud" % username,
             "email-password-reset",
             username = username,
             password = temporary_password,

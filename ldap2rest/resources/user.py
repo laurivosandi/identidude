@@ -22,7 +22,8 @@ class UserListResource:
     def __init__(self, conn, mailer=None):
         self.conn = conn
         self.mailer = mailer
-        
+
+    @auth
     @serialize
     def on_get(self, req, resp, domain=settings.BASE_DOMAIN):
         user_fields = "mobile", "gender", "dateOfBirth", "cn", "givenName", \
@@ -72,11 +73,13 @@ class UserListResource:
             "nslcd", "proxy", "man", "news", "tty", "adm", "disk"])
         
         if username in RESERVED_GROUPS: # TODO: Use better HTTP status code
+            print "Username %s is reserved" % username
             raise falcon.HTTPConflict("Error", "Username is reserved")
 
         # Search for already existing username
         args = domain2dn(settings.BASE_DOMAIN), ldap.SCOPE_SUBTREE, "(&(objectClass=posixAccount)(uid=%s))" % username, []
         for dn, attributes in self.conn.search_s(*args):
+            print "Username %s already exists" % username
             raise falcon.HTTPConflict("Error", "Username already exists")
             
         # Automatically assign UID/GID for the user
@@ -135,7 +138,7 @@ class UserListResource:
             "gidNumber": str(uid),
             "sn": last_name.encode("utf-8"),
             "givenName": first_name.encode("utf-8"),
-            "mobile": req.get_param("mobile").encode("utf-8"),
+            "mobile": (req.get_param("mobile") or "").encode("utf-8"),
             "preferredLanguage": "en_US",
             "homeDirectory": home,
             "loginShell": "/bin/bash",
@@ -193,7 +196,7 @@ class UserListResource:
                 except ldap.TYPE_OR_VALUE_EXISTS: # TODO: Remove from group upon user removal
                     pass
 
-        if self.mailer:
+        if self.mailer and not req.get_param("batch"): # No e-mailing with batch additions
             self.mailer.enqueue(
                 settings.ADMIN_EMAIL,
                 recipients,

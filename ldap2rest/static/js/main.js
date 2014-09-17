@@ -94,11 +94,6 @@ function onLogin(status, me) {
     $("#sidepanel").show();
     $("#home").show();
     $("#profile").show();
-    
-    $.ajax({
-        type: "GET",
-        url: "/api/domain/",
-    }).done(onDomainsLoaded);
 }
 
 function onProfileLoaded(status, me) {

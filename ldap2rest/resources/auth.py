@@ -31,6 +31,7 @@ def auth(func):
             raise falcon.HTTPForbidden("Error", "Token expired")
 
         # Authorization
+        print "KWARGS:", kwargs
         if "domain" in kwargs:
             domain = ADMINS.get(username, None)
             if not domain:
