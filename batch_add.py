@@ -23,14 +23,14 @@ Currently this utility probes for following tab delimited headers. Username and 
 
 import os
 import re
-from getpass import getpass
-from time import sleep
-from optparse import OptionParser
 import unicodedata
 import urllib.request
 import urllib.parse
 import http.client
 import json
+from getpass import getpass
+from time import sleep
+from optparse import OptionParser
 
 class NotFoundError(Exception):
     pass
@@ -93,8 +93,6 @@ class API(object):
     def reset_password(self, domain, username):
         return self.query("PUT", "/domain/%s/user/%s/password/" % (domain, username))
 
-from openpyxl import load_workbook
-        
 def main(options, *filenames):
     import csv
     rows = []
@@ -199,11 +197,15 @@ def main(options, *filenames):
                 print("Initial password set for %s, skipping user creation" % username)
                 continue
 
-            try:
-                print("Deleting user:", username)
-                api.userdel("meripohi.edu.ee", username)
-            except NotFoundError:
-                pass
+            if options.overwrite:
+                try:
+                    print("Deleting user:", username)
+                    api.userdel(options.domain, username)
+                except NotFoundError:
+                    pass
+            else:
+                print("User already exists %s" % username)
+                continue
 
             kwargs = dict(
                 batch = 1,
@@ -227,11 +229,12 @@ def main(options, *filenames):
 if __name__ == "__main__":
 
     parser = OptionParser()
-    parser.add_option("-e", "--endpoint", dest="endpoint", default="http://ldap.povi.ee/api/")
-    parser.add_option("-d", "--domain", dest="domain", help="Domain for user accounts")
-    parser.add_option("-g", "--group", dest="group", default="students", help="Primary POSIX group")
+    parser.add_option("-e", "--endpoint", dest="endpoint", default="http://ldap.povi.ee/api/", help="API endpoint")
     parser.add_option("-p", "--password", dest="password", help="API password")
     parser.add_option("-u", "--username", dest="username", help="API username")
+    parser.add_option("-d", "--domain", dest="domain", help="Domain for user accounts")
+    parser.add_option("-g", "--group", dest="group", default="students", help="Primary POSIX group")
+    parser.add_option("-o", "--overwrite", dest="overwrite", help="Re-create user accounts that already exist, use with care!")
 
     (options, filenames) = parser.parse_args()
 
