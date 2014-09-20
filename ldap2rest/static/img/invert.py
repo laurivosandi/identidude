@@ -24,5 +24,8 @@ for filename in os.listdir("."):
 
     # Inject CSS stylesheets is not neccessary if SVG is inlined
     with open(inverted, "wb") as sh:
-        tree.write(sh, inclusive_ns_prefixes=False)
+        try:
+            tree.write(sh, inclusive_ns_prefixes=False)
+        except TypeError: # Support wheezy's older python-lxml
+            tree.write(sh)
 

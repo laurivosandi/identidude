@@ -19,8 +19,8 @@ Dependencies:
 
 .. code:: bash
 
-    apt-get install python-pip python-cjson
-    pip install falcon
+    apt-get install python-pip python-dev cython python-ldap swig2.0 swig python-lxml
+    pip install falcon jinja2 M2Crypto
 
 Screenshots:
 

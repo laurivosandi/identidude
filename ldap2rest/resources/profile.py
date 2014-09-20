@@ -1,7 +1,7 @@
 import ldap
 import re
 import falcon
-from resources.auth import auth
+from auth import authenticate, authorize_domain_admin
 from util import serialize, domain2dn, dn2domain
 import settings
 
@@ -11,7 +11,8 @@ class ProfileResource:
         self.conn = conn
 
     @serialize
-    def on_get(self, req, resp, domain=settings.BASE_DOMAIN, username=None):
+    @authenticate
+    def on_get(self, req, resp, authenticated_user, domain=settings.BASE_DOMAIN, username=None):
         if not re.match("[a-z][a-z0-9]{1,31}$", username):
             raise falcon.HTTPBadRequest("Error", "Invalid username")
             
@@ -41,11 +42,17 @@ class ProfileResource:
             cn = attributes.get("cn").pop().decode("utf-8"),
             modified = datetime.strptime(attributes.get("modifyTimestamp").pop(), "%Y%m%d%H%M%SZ"))
 
-    def on_post(self, req, resp, domain=settings.BASE_DOMAIN, username=None):
+
+    @serialize
+    @authenticate
+    @authorize_domain_admin
+    def on_post(self, req, resp, authenticated_user, domain=settings.BASE_DOMAIN, username=None):
         assert username, "No username specified"
 
-
-    def on_delete(self, req, resp, domain=settings.BASE_DOMAIN, username=None):
+    @serialize
+    @authenticate
+    @authorize_domain_admin
+    def on_delete(self, req, resp, authenticated_user, domain=settings.BASE_DOMAIN, username=None):
         # Validate username, TODO: in middleware
         if not re.match("[a-z][a-z0-9]{1,31}$", username):
             raise falcon.HTTPBadRequest("Error", "Invalid username")
@@ -70,4 +77,6 @@ class ProfileResource:
             self.conn.delete_s(dn)
         except ldap.LDAPError, e:
             raise falcon.HTTPBadRequest(e.message.get("info"), e.message.get("desc"))
+            
+        # TODO: Delete group memberships!
 

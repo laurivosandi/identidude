@@ -1,6 +1,6 @@
 import ldap
 import re
-from resources.auth import auth
+from auth import authenticate
 from util import serialize, domain2dn, dn2domain
 import settings
 
@@ -9,7 +9,8 @@ class GroupResource:
         self.conn = conn
 
     @serialize
-    def on_get(self, req, resp):
+    @authenticate
+    def on_get(self, req, resp, authenticated_user):
         group_fields = "gidNumber", "memberUid", "description"
         args = "ou=groups," + domain2dn(settings.BASE_DOMAIN), ldap.SCOPE_ONELEVEL, "objectClass=posixGroup", group_fields
         groups = dict()

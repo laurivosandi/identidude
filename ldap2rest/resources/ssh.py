@@ -1,5 +1,7 @@
 import ldap
 from util import domain2dn, serialize
+from forms import validate
+from auth import authenticate, authorize_owner
 from settings import BASE_DOMAIN
 
 class AuthorizedKeysResource:
@@ -26,5 +28,8 @@ class AuthorizedKeysResource:
         return r
 
     @serialize
-    def on_post(self, req, resp, domain=BASE_DOMAIN):
+    @authenticate
+    @authorize_owner
+    @validate("pubkey", "[A-Za-z0-9 /+@_]+$")
+    def on_post(self, req, resp, authenticated_user, domain=BASE_DOMAIN):
         pass

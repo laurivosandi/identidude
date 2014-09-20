@@ -1,16 +1,10 @@
 
 import falcon
-import hashlib
 import json
-import random
 import re
 import unicodedata
 import urlparse
 from datetime import datetime
-from settings import COOKIE_SECRET
-
-def generate_password(length):
-    return ''.join(random.sample("ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789", length))
 
 def normalize_username(first, last, serialNumber):
     username = first[0] + last + serialNumber[-4:]
@@ -30,16 +24,6 @@ def domain2dn(domain):
 def dn2domain(dn):
     assert re.match("dc=[a-z0-9]+(-[a-z0-9]+)*(\,dc=[a-z0-9]+(-[a-z0-9]+)*)+$", dn)
     return ".".join([dc[3:] for dc in dn.split(",")])
-
-def generate_token(username, created):
-    created = created.strftime("%s")
-    digest = hashlib.sha1()
-    digest.update(username)
-    digest.update("|")
-    digest.update(created)
-    digest.update("|")
-    digest.update(COOKIE_SECRET)
-    return "%s,%s,%s" % (username, created, digest.hexdigest())
     
 class MyEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -54,19 +38,9 @@ def serialize(func):
     def wrapped(instance, req, resp, **kwargs):
         if req.content_length:
             buf = req.stream.read(req.content_length)
-            if req.get_header("content-type") == "application/x-www-form-urlencoded":
+            if re.match("application/x-www-form-urlencoded(; *charset=utf-8)?$", req.get_header("content-type"), re.I):
                 for key, value in urlparse.parse_qs(buf).items():
                     req._params[key] = value[0].decode("utf-8")
-            elif req.get_header("content-type") == "application/json":
-                try:
-                    body = json.loads(buf, encoding='utf-8')
-                except ValueError:
-                    raise falcon.HTTPError(falcon.HTTP_400,
-                        "Malformed JSON",
-                        "Could not decode the request body. The JSON was incorrect.")
-                else:
-                    for key, value in body.items():
-                        req._params[key] = value
             else:
                 raise falcon.HTTPError(falcon.HTTP_400,
                     "Unknown content type",

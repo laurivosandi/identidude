@@ -4,18 +4,19 @@ import falcon
 import ldap
 import re
 import settings
-from resources.auth import auth
+from auth import authenticate, authorize_domain_admin, authorize_owner, generate_password
 from forms import validate
-from util import serialize, domain2dn, dn2domain, generate_password
+from util import serialize, domain2dn, dn2domain
 
 class PasswordResource:
     def __init__(self, conn, mailer):
         self.conn = conn
         self.mailer = mailer
 
-    @auth
     @serialize
-    def on_put(self, req, resp, domain, username):
+    @authenticate
+    @authorize_domain_admin
+    def on_put(self, req, resp, authenticated_user, domain, username):
         """
         Reset password
         """
@@ -51,11 +52,11 @@ class PasswordResource:
         self.conn.passwd_s(dn_user, None, temporary_password)
         return dict(description="Password successfully reset", recipients=recipients)
 
-    @auth
     @serialize
+    @authenticate
+    @authorize_owner
     @validate("password",  r"[A-Za-z0-9@#$%^&+=]{8,}$")
-    @validate("confirm",   r"[A-Za-z0-9@#$%^&+=]{8,}$")
-    def on_post(self, req, resp, domain, username):
+    def on_post(self, req, resp, authenticated_user,  domain, username):
         """
         Set password
         """
@@ -70,9 +71,10 @@ class PasswordResource:
             print "No such user %s" % username
             raise falcon.HTTPNotFound()
 
-    @auth
+    @authenticate
+    @authorize_domain_admin
     @serialize
-    def on_delete(self, req, resp, domain, username):
+    def on_delete(self, req, resp, authenticated_user, domain, username):
         """
         Lock account
         """

@@ -114,6 +114,30 @@ function onProfileLoaded(status, me) {
             onDomainsLoaded(me.managed_domains);
         }
         console.info("Profile loaded:", status, me);
+        
+        ldap.groups(function(status, groups) {
+            if (status != 200) {
+                alert(groups.description);
+            } else {
+                $("#edit-profile .groups").empty();
+                var count = 0;
+                for (group in groups) {
+                    console.info("Adding group:", group);
+                    var $input = $("<input/>").attr("id", "edit-profile-group-" + group).attr("type", "checkbox").attr("name", group);
+                    var $label = $("<label/>").attr("for", "edit-profile-group-" + group).append(groups[group].description);
+                    $("#edit-profile .groups").append($input, $label);
+                    $("#add-user form select.group").append($("<option/>").addClass("icon group").attr("value", group).html(groups[group].description));
+                    count++;
+                }
+                if (count == 0) {
+                    $("#edit-profile .groups").hide();
+                    $("#add-user form select.group").hide();
+                } else {
+                    $("#edit-profile .groups").show();
+                    $("#add-user form select.group").show();
+                }
+            }
+        });
     } else {
         console.info("Failed to retrieve profile, going to show login section instead:", me);
         $("content section").hide();
@@ -125,29 +149,7 @@ $(document).ready(function() {
     ldap = new LDAP("/api");
     ldap.profile(onProfileLoaded);
     
-    ldap.groups(function(status, groups) {
-        if (status != 200) {
-            alert(groups.description);
-        } else {
-            $("#edit-profile .groups").empty();
-            var count = 0;
-            for (group in groups) {
-                console.info("Adding group:", group);
-                var $input = $("<input/>").attr("id", "edit-profile-group-" + group).attr("type", "checkbox").attr("name", group);
-                var $label = $("<label/>").attr("for", "edit-profile-group-" + group).append(groups[group].description);
-                $("#edit-profile .groups").append($input, $label);
-                $("#add-user form select.group").append($("<option/>").addClass("icon group").attr("value", group).html(groups[group].description));
-                count++;
-            }
-            if (count == 0) {
-                $("#edit-profile .groups").hide();
-                $("#add-user form select.group").hide();
-            } else {
-                $("#edit-profile .groups").show();
-                $("#add-user form select.group").show();
-            }
-        }
-    });
+
     
     
     // Prefill username field in log-in view    
@@ -273,6 +275,7 @@ $(document).ready(function() {
         var id = $(this).val();
         ldap.lookup(id, function(status, details) {
             $("#add-user .id-lookup").removeClass("busy");
+            $("#add-user .extra").fadeOut();
             if (id in details) {
                 $("#add-user .name").val(details[id].gn + " " + details[id].sn);
                 $("#add-user .user").val(details[id].username);

@@ -5,38 +5,33 @@ import ldap
 import os
 import random
 import re
-import settings
 import string
+from auth import authenticate, authorize_domain_admin, generate_password
 from ldap import modlist
 from datetime import datetime
 from forms import validate, required
-from util import serialize, domain2dn, dn2domain, generate_password
-from resources.auth import auth
-
-assert hasattr(settings, "BASE_DOMAIN")
-assert hasattr(settings, "HOME")
-assert hasattr(settings, "ADMIN_NAME")
-assert hasattr(settings, "ADMIN_EMAIL")
+from util import serialize, domain2dn, dn2domain
+from settings import BASE_DOMAIN, HOME, ADMIN_NAME, ADMIN_EMAIL, LDAP_USER_ATTRIBUTE_ID, LDAP_USER_ATTRIBUTE_RECOVERY_EMAIL, ADMINS
 
 class UserListResource:
     def __init__(self, conn, mailer=None):
         self.conn = conn
         self.mailer = mailer
 
-    @auth
     @serialize
-    def on_get(self, req, resp, domain=settings.BASE_DOMAIN):
+    @authenticate
+    def on_get(self, req, resp, authenticated_user, domain=BASE_DOMAIN):
         user_fields = "mobile", "gender", "dateOfBirth", "cn", "givenName", \
             "sn", "uid", "uidNumber", "gidNumber", "homeDirectory", \
-            "modifyTimestamp", settings.LDAP_USER_ATTRIBUTE_ID,
+            "modifyTimestamp", LDAP_USER_ATTRIBUTE_ID,
         args = domain2dn(domain), ldap.SCOPE_SUBTREE, "objectClass=posixAccount", user_fields
         users = dict()
         for dn, attributes in self.conn.search_s(*args):
             m = re.match("cn=(.+?),ou=people,(.+)$", dn)
             cn, dcs = m.groups()
             users[dn] = dict(
-                id = attributes.get(settings.LDAP_USER_ATTRIBUTE_ID, [None]).pop(),
-                recovery_email = attributes.get(settings.LDAP_USER_ATTRIBUTE_RECOVERY_EMAIL, [""]).pop(),
+                id = attributes.get(LDAP_USER_ATTRIBUTE_ID, [None]).pop(),
+                recovery_email = attributes.get(LDAP_USER_ATTRIBUTE_RECOVERY_EMAIL, [""]).pop(),
                 domain = dn2domain(dcs),
                 born = attributes.get("dateOfBirth", [None]).pop(),
                 username = attributes.get("uid").pop(),
@@ -49,18 +44,19 @@ class UserListResource:
                 modified = datetime.strptime(attributes.get("modifyTimestamp").pop(), "%Y%m%d%H%M%SZ"))
         return users
 
-    @auth
     @serialize
+    @authenticate
+    @authorize_domain_admin
     @required("cn")
     @validate("group",     r"[a-z]{1,32}$", required=False)
     @validate("id",        r"[3-6][0-9][0-9][01][0-9][0-3][0-9][0-9][0-9][0-9][0-9]$", required=False)
     @validate("username",  r"[a-z][a-z0-9]{1,31}$", required=True)
-    def on_post(self, req, resp, domain=settings.BASE_DOMAIN):
+    def on_post(self, req, resp, authenticated_user, domain=BASE_DOMAIN):
         fullname = req.get_param("cn")
         username = req.get_param("username")
         first_name, last_name  = fullname.rsplit(" ", 1)
 
-        home = settings.HOME(username, domain).encode("utf-8")
+        home = HOME(username, domain).encode("utf-8")
         initial_password = generate_password(8)
         
         dn_user = "cn=%s,ou=people,%s" % (fullname.encode("utf-8"), domain2dn(domain))
@@ -77,7 +73,7 @@ class UserListResource:
             raise falcon.HTTPConflict("Error", "Username is reserved")
 
         # Search for already existing username
-        args = domain2dn(settings.BASE_DOMAIN), ldap.SCOPE_SUBTREE, "(&(objectClass=posixAccount)(uid=%s))" % username, []
+        args = domain2dn(BASE_DOMAIN), ldap.SCOPE_SUBTREE, "(&(objectClass=posixAccount)(uid=%s))" % username, []
         for dn, attributes in self.conn.search_s(*args):
             print "Username %s already exists" % username
             raise falcon.HTTPConflict("Error", "Username already exists")
@@ -85,7 +81,7 @@ class UserListResource:
         # Automatically assign UID/GID for the user
         UID_MIN = 2000
         UID_MAX = 9000
-        args = domain2dn(settings.BASE_DOMAIN), ldap.SCOPE_SUBTREE, "objectClass=posixAccount", ["uidNumber"]
+        args = domain2dn(BASE_DOMAIN), ldap.SCOPE_SUBTREE, "objectClass=posixAccount", ["uidNumber"]
         uids = set()
         for dn, attributes in self.conn.search_s(*args):
             uid = int(attributes["uidNumber"].pop())
@@ -109,15 +105,15 @@ class UserListResource:
         # Compose list of recipients for the e-mail
         if self.mailer:
             # Add ME!
-            recipients = [settings.ADMIN_EMAIL]
+            recipients = [ADMIN_EMAIL]
             local_helpdesk = None
             
             # Add all local helldesk guys
-            for admin_username, subdomain in settings.ADMINS.items():
+            for admin_username, subdomain in ADMINS.items():
                 if subdomain.endswith("." + domain) or subdomain == domain:
-                    args = domain2dn(domain), ldap.SCOPE_SUBTREE, "(&(objectClass=posixAccount)(uid=%s))" % admin_username, [settings.LDAP_USER_ATTRIBUTE_RECOVERY_EMAIL, "cn"]
+                    args = domain2dn(domain), ldap.SCOPE_SUBTREE, "(&(objectClass=posixAccount)(uid=%s))" % admin_username, [LDAP_USER_ATTRIBUTE_RECOVERY_EMAIL, "cn"]
                     for _, attributes in self.conn.search_s(*args):
-                        admin_email = attributes.get(settings.LDAP_USER_ATTRIBUTE_RECOVERY_EMAIL, [""]).pop()
+                        admin_email = attributes.get(LDAP_USER_ATTRIBUTE_RECOVERY_EMAIL, [""]).pop()
                         if "@" in admin_email:
                             admin_email = admin_email.replace("@", "+helpdesk@")
                             if domain not in admin_email:
@@ -130,8 +126,8 @@ class UserListResource:
                 recipients.append(req.get_param("email"))
                             
         ldif_user = modlist.addModlist({
-            settings.LDAP_USER_ATTRIBUTE_ID: req.get_param("id", "").encode("utf-8") or [],
-            settings.LDAP_USER_ATTRIBUTE_RECOVERY_EMAIL: req.get_param("email", "").encode("utf-8"),
+            LDAP_USER_ATTRIBUTE_ID: req.get_param("id", "").encode("utf-8") or [],
+            LDAP_USER_ATTRIBUTE_RECOVERY_EMAIL: req.get_param("email", "").encode("utf-8"),
             "employeeType": req.get_param("group").encode("utf-8"),
             "uid": username.encode("utf-8"),
             "uidNumber": str(uid),
@@ -161,19 +157,16 @@ class UserListResource:
             ou = "groups"))
 
         try:
-            print "Adding ou=people if neccessary"
             self.conn.add_s("ou=people," + domain2dn(domain), ldif_ou_people)
         except ldap.ALREADY_EXISTS:
             pass
             
         try:
-            print "Adding ou=groups if neccessary"
             self.conn.add_s("ou=groups," + domain2dn(domain), ldif_ou_groups)
         except ldap.ALREADY_EXISTS:
             pass
 
         try:
-            print "Adding user:", repr(dn_user), ldif_user
             self.conn.add_s(dn_user, ldif_user)
         except ldap.ALREADY_EXISTS:
             raise falcon.HTTPConflict("Error", "User with such full name already exists")
@@ -182,7 +175,6 @@ class UserListResource:
         self.conn.passwd_s(dn_user, None, initial_password)
 
         try:
-            print "Adding group:", repr(dn_group), ldif_group
             if not req.get_param("dry"):
                 self.conn.add_s(dn_group, ldif_group)
         except ldap.ALREADY_EXISTS:
@@ -192,13 +184,13 @@ class UserListResource:
             ldif = (ldap.MOD_ADD, 'memberUid', username.encode("utf-8")),
             if not req.get_param("dry"):
                 try:
-                    self.conn.modify_s(("cn=%s,ou=groups,%s" % (req.get_param("group"), domain2dn(settings.BASE_DOMAIN))).encode("utf-8"), ldif)
+                    self.conn.modify_s(("cn=%s,ou=groups,%s" % (req.get_param("group"), domain2dn(BASE_DOMAIN))).encode("utf-8"), ldif)
                 except ldap.TYPE_OR_VALUE_EXISTS: # TODO: Remove from group upon user removal
                     pass
 
         if self.mailer and not req.get_param("batch"): # No e-mailing with batch additions
             self.mailer.enqueue(
-                settings.ADMIN_EMAIL,
+                ADMIN_EMAIL,
                 recipients,
                 u"%s jaoks loodi konto %s" % (fullname, username),
                 "email-user-added",
@@ -206,7 +198,7 @@ class UserListResource:
                 username = username,
                 password = initial_password,
                 local_helpdesk = local_helpdesk,
-                server_helpdesk={"email": settings.ADMIN_EMAIL, "name": settings.ADMIN_NAME}
+                server_helpdesk={"email": ADMIN_EMAIL, "name": ADMIN_NAME}
             )
         return dict(
             id = req.get_param("id"),

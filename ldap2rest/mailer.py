@@ -14,28 +14,21 @@ class Mailer(object):
         self.secure = secure
         self.templates = jinja2.FileSystemLoader(os.path.join(os.path.dirname(__file__), "templates"))
         self.env = jinja2.Environment(loader=self.templates)
-        self.reconnect()
+        self.conn = None
 
     def reconnect(self):
         # Gmail employs some sort of IPS
         # https://accounts.google.com/DisplayUnlockCaptcha
-        self.server = smtplib.SMTP("%s:%d" % (self.server, self.port))
+        print "Connecting to:", self.server, self.port
+        self.conn = smtplib.SMTP(self.server, self.port)
         if self.secure:
-            self.server.starttls()
+            self.conn.starttls()
         if self.username and self.password:
-            self.server.login(self.username, self.password)
+            self.conn.login(self.username, self.password)
         
     def enqueue(self, sender, recipients, subject, template, **context):
-        backoff = 1
-        while True:
-            try:
-                self.send(sender, recipients, subject, template, **context)
-                return
-            except smtplib.SMTPServerDisconnected:
-                print("Connection to %s unexpectedly closed, probably TCP timeout, backing off for %d second" % (self.server, backoff))
-                self.reconnect()
-                backoff = backoff * 2
-                sleep(backoff)
+        self.send(sender, recipients, subject, template, **context)
+
         
     def send(self, sender, recipients, subject, template, **context):
         assert isinstance(sender, basestring)
@@ -56,4 +49,15 @@ class Mailer(object):
         msg.attach(part1)
         msg.attach(part2)
         
-        self.server.sendmail(sender, recipients, msg.as_string())
+        backoff = 1
+        while True:
+            try:
+                if not self.conn:
+                    self.reconnect()
+                self.conn.sendmail(sender, recipients, msg.as_string())
+                return
+            except smtplib.SMTPServerDisconnected:
+                print("Connection to %s unexpectedly closed, probably TCP timeout, backing off for %d second" % (self.server, backoff))
+                self.reconnect()
+                backoff = backoff * 2
+                sleep(backoff)
