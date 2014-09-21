@@ -1,10 +1,28 @@
-
+# encoding: utf-8
 import falcon
 import json
 import re
 import unicodedata
 import urlparse
-from datetime import datetime
+from datetime import datetime, date
+
+def apidoc(cls):
+    """
+    Automagically document resource classes based on validate(), required(), etc decorators
+    """
+    @serialize
+    def apidoc_on_options(resource, req, resp, *args, **kwargs):
+        d = {}
+        for key in dir(resource):
+            if key == "on_options": continue
+            if re.match("on_\w+", key):
+                func = getattr(resource, key)
+                d[key[3:]] = getattr(func, "_apidoc", None)
+                d[key[3:]]["description"] = (getattr(func, "__doc__") or u"").strip()
+                
+        return d
+    cls.on_options = apidoc_on_options
+    return cls
 
 def normalize_username(first, last, serialNumber):
     username = first[0] + last + serialNumber[-4:]
@@ -29,22 +47,21 @@ class MyEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, datetime):
             return obj.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + "Z"
+        if isinstance(obj, date):
+            return obj.strftime('%Y-%m-%d')
         return json.JSONEncoder.default(self, obj)
 
 def serialize(func):
     """
-    Falcon request/response serialization
+    Falcon response serialization
     """
     def wrapped(instance, req, resp, **kwargs):
-        if req.content_length:
-            buf = req.stream.read(req.content_length)
-            if re.match("application/x-www-form-urlencoded(; *charset=utf-8)?$", req.get_header("content-type"), re.I):
-                for key, value in urlparse.parse_qs(buf).items():
-                    req._params[key] = value[0].decode("utf-8")
-            else:
-                raise falcon.HTTPError(falcon.HTTP_400,
-                    "Unknown content type",
-                    "Could not understand content type %s of the body of the request" % req.get_header("content-type"))
+        assert req.get_param("unicode") == u"✓", "Unicode sanity check failed"
+        
+        # Default to no caching of API calls
+        resp.set_header("Cache-Control", "no-cache, no-store, must-revalidate");
+        resp.set_header("Pragma", "no-cache");
+        resp.set_header("Expires", "0");
 
         r = func(instance, req, resp, **kwargs)
 
@@ -53,10 +70,17 @@ def serialize(func):
                 raise falcon.HTTPUnsupportedMediaType(
                     'This API only supports the JSON media type.',
                     href='http://docs.examples.com/api/json')
-            resp.set_header('Access-Control-Allow-Origin', '*')
             resp.set_header('Content-Type', 'application/json')
             resp.body = json.dumps(r, encoding="utf-8", cls=MyEncoder)
         return r
+        
+    # Pipe API docs
+    wrapped._apidoc = getattr(func, "_apidoc", {})
+    wrapped.__doc__ = func.__doc__
     return wrapped
     
+def days_since_epoch(today=None):
+    if not today:
+        today = date.today()
+    return (today - date(1970,1,1)).days
 

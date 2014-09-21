@@ -23,6 +23,7 @@ conn = ldap.init(settings.LDAP_SERVER)
 conn.simple_bind_s(settings.LDAP_ADMIN_DN, settings.LDAP_ADMIN_PASS)
 
 if settings.DEBUG:
+    from time import sleep
     # Give neat debug output!
     def debug_search_s(oldfunc):
         def patched(base, scope, filterstr="(objectClass=*)", attrlist=None, attrsonly=0):
@@ -33,11 +34,21 @@ if settings.DEBUG:
     def debug_delete_s(oldfunc):
         def patched(dn):
             print "ldapdelete -h %s -x -b '%s'" % (settings.LDAP_SERVER, dn)
+            sleep(1)
             oldfunc(dn)
         return patched
-            
+
+    def debug_passwd_s(oldfunc):
+        def patched(user, oldpw, newpw):
+            print "ldappasswd", user
+            sleep(1)
+            oldfunc(user, oldpw, newpw)
+        return patched        
+
+    # Decorate em'!
     conn.search_s = debug_search_s(conn.search_s)
     conn.delete_s = debug_delete_s(conn.delete_s)
+    conn.passwd_s = debug_passwd_s(conn.passwd_s)
 
 mailer = Mailer(
     settings.SMTP_SERVER,
@@ -46,7 +57,7 @@ mailer = Mailer(
     username=getattr(settings, "SMTP_USERNAME", ""),
     password=getattr(settings, "SMTP_PASSWORD", ""))
 
-app = falcon.API(after=[])
+app = falcon.API()
 app.add_route("/session/", SessionResource(conn, admins=settings.ADMINS))
 app.add_route("/authorized_keys/", AuthorizedKeysResource(conn))
 app.add_route("/group/", GroupResource(conn))
@@ -54,7 +65,7 @@ app.add_route("/domain/", DomainListResource(conn))
 app.add_route("/domain/{domain}/user/", UserListResource(conn, mailer))
 app.add_route("/domain/{domain}/user/{username}/", ProfileResource(conn))
 app.add_route("/domain/{domain}/user/{username}/password/", PasswordResource(conn, mailer))
-app.add_route("/domain/{domain}/authorized_keys/", AuthorizedKeysResource(conn))
+#app.add_route("/domain/{domain}/authorized_keys/", AuthorizedKeysResource(conn))
 app.add_route("/lookup/", LookupResource())
 
 if __name__ == '__main__':

@@ -8,6 +8,9 @@
     text-align: center;
 }
 
+h, h1 {
+    font-size: 7mm;
+}
 
 button,
 input,
@@ -17,89 +20,6 @@ label {
     font-size: 5mm;
 }
 
-label,
-select,
-input {
-    display: block;
-    width: 100%;
-    margin: 8px 0;
-    
-}
-
-
-input[type='checkbox'] {
-    clear: both;
-    float: left;
-    width: 12mm;
-}
-
-select,
-input {
-    border: none;
-    background: #e8e2e1;
-    color: #000;
-    font-size: 5mm;
-    box-sizing: border-box;
-    -moz-box-sizing: border-box;
-    -webkit-box-sizing: border-box;
-}
-
-/* hides the spin-button for firefox */
-input[type=number] {
-    -moz-appearance:textfield;
-}
-
-/* hides the spin-button for chrome*/
-input[type=date]::-webkit-outer-spin-button,
-input[type=date]::-webkit-inner-spin-button,
-input[type=number]::-webkit-outer-spin-button,
-input[type=number]::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-}
-
-input:invalid {
-    background-color: #ffe2e1;
-}
-
-input.icon {
-    background-position: 6px 4px;
-}
-
-input[type='submit'],
-button {
-    display: block-inline;
-    text-align: left;
-    border: 1px solid #1a1a1a;
-    background-color: #222222;
-    margin: 4px 0;
-    cursor: pointer;
-    border-radius: 3mm;
-    -moz-border-radius: 3mm;
-    -webkit-border-radius: 3mm;
-    color: #fff;
-}
-
-select:focus,
-input:focus {
-    outline: none;
-}
-
-.button-group {
-    display: block;
-    width: 100%;
-}
-
-.button-group input,
-.button-group button {
-    margin: 0px;
-    display: inline-block;
-    width: auto;
-}
-
-button.icon {
-    background-position: 4px 4px;
-}
 
 
 ul {
@@ -159,31 +79,6 @@ section {
     margin-bottom: 10mm;
 }
 
-li,
-li.icon,
-input,
-input.icon,
-button,
-button.icon,
-div.icon,
-select,
-select.icon,
-option,
-option.icon,
-label {
-    -webkit-appearance: none;
-    line-height: 8mm;
-    padding: 2mm 6mm 2mm 12mm;
-    background-position: 2mm 2mm;
-    background-size: 8mm;
-}
-
-
-div.icon,
-input[type='search'] {
-    padding-right: 3mm;
-}
-
 header {
     background: #222222;
     color: #fff;
@@ -199,6 +94,19 @@ container {
 
 content {
     display: block;
+}
+
+.two-column {
+    -webkit-column-count: 2;
+    -moz-column-count: 2;
+    column-count: 2;
+    -webkit-column-fill: auto;
+    -moz-column-fill: auto;
+    column-fill: auto;
+}
+
+.two-column * {
+    margin: 0;
 }
 
 @media screen and (min-width:52em) {

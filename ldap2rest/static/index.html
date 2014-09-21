@@ -3,52 +3,64 @@
     <head>
         <meta name="viewport" content="width=device-width, maximum-scale=1.0, initial-scale=1.0, user-scalable=no"/>
         <meta charset="utf-8"/>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
         <link href='//fonts.googleapis.com/css?family=Droid+Sans' rel='stylesheet' type='text/css'>
         <title>Kasutajate haldus</title>
         <link rel="stylesheet" href="css/icons.css"/>
+        <link rel="stylesheet" href="css/forms.css"/>
         <link rel="stylesheet" href="css/style.css"/>
-        <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+        
+        <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+        <script type="text/javascript" src="http://jamesallardice.github.io/Placeholders.js/assets/js/placeholders.min.js"></script>
         <script type="text/javascript" src="js/ldap.js"></script>
         <script type="text/javascript" src="js/main.js"></script>
+        <!--[if lt IE 11]>
+        <script>
+        alert("Teie veebilehitseja on ajast ja arust. Palun kasutage Mozilla Firefox, Google Chrome, Chromium, Internet Explorer 11 või mõnda muud modernset veebilehitsejat!");
+        window.location = "http://browserchoice.eu/";
+        </script>
+        <![endif]-->
     </head>
     <body>
 
         <header>
             <container>
-                <h1>Arvutipargi haldusliides</h1>
+                <h>Arvutipargi haldusliides</h>
             </container>
         </header>
     
         <container>
             <aside id="sidepanel">
-                <section id="profile" style="display:none;">
-                    <h1>Mina</h1>
+                <div id="profile" style="display:none;">
+                    <h>Mina</h>
                     <div class="icon user">Eesnimi Perekonnanimi</div>
                     <button class="icon log-out">Logi välja</button>
-                </section>
+                </div>
                 
-                <section id="add-user" style="display:none;">
-                    <h1>Kasutaja lisamine</h1>
+                <div id="add-user" style="display:none;">
+                    <h>Kasutaja lisamine</h>
                     <input type="hidden" class="domain"/>
                     <form>
 
                         <input type="number" name="id" class="icon id-lookup" title="Isikukood" placeholder="38810240123" pattern="\d{11}" step="0"/>
-                        <input type="text" name="cn" class="icon name" title="Eesnimi" placeholder="Eesnimi Perekonnanimi"/>
+                        <input type="text" name="cn" class="icon name" title="Eesnimi" placeholder="Eesnimi Perekonnanimi" pattern="[A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u01BA]+([\-\ ][A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u01BA]+)+"/>
                         <div class="extra">
                             <input type="text" name="username" class="icon user" title="Kasutajanimi" placeholder="mmalakas0123" pattern="[a-z][a-z0-9]{1,32}" required/>
-                            <input type="text" name="email" class="icon e-mail" title="Isiklik e-post" placeholder="mati.malakas@gmail.com" required/>
-                            <!-- <input type="date" class="icon date" title="Sünnikuupäev" placeholder="31-12-1999" required/> -->
-                            <input type="tel" name="mobile" class="icon mobile" title="Mobiiltelefoni number" placeholder="+372 5678 9120"/>
+                            <input type="email" name="email" title="Isiklik e-post" placeholder="mati.malakas@gmail.com" required/>
+                            <input type="tel" name="mobile" title="Mobiiltelefoni number" placeholder="+372 5678 9120"/>
                             <select name="group" class="icon group" placeholder="Primaarne grupp">
                             </select>
-                            <input name="notify" type="checkbox" id="add-user-notify" title="Teavita lisatavat kasutajal ülal sisestatud e-posti teel tema kasutajanimest ning paroolist."/> <label for="add-user-notify" checked>Teavita e-posti teel</label>
+                            <input name="notify" type="checkbox" id="add-user-notify" title="Teavita lisatavat kasutajal ülal sisestatud e-posti teel tema kasutajanimest ning paroolist."/>
+                            <label for="add-user-notify" checked>Teavita e-posti teel</label>
                         </div>
-                        <button class="icon add-user">Lisa kasutaja</button>
+                        <button type="submit" class="icon add-user">Lisa kasutaja</button>
                     </form>
-                </section>
+                    
+
+                </div>
                 <!--
                 <section id="add-domain" style="display:none;">
-                    <h1>Alamdomeeni lisamine</h1>
+                    <h>Alamdomeeni lisamine</h>
                     <input type="hidden" class="domain"/>
                     <form>
                         <input type="description" name="cn" class="icon name" title="Alamdomeeni kirjeldus" placeholder="Karula kool"/>
@@ -65,12 +77,12 @@
 
             <content>
                 <section id="home" style="display:none;">
-                    <h1>Esileht</h1>
+                    <h>Esileht</h>
                     <ul>
-                        <li class="icon my-domains">Minu hallatud asutused</li>
-<!--                        <li class="icon edit-profile">Profiil</li> -->
-<!--                        <li class="icon change-password">Parooli vahetamine</li>-->
-                        <li class="icon authorized-keys">Minu SSH võtmed</li>
+                        <li class="icon managed-domains">Minu hallatud asutused</li>
+                        <li class="icon edit-profile profile">Minu kontaktandmed</li>
+                        <li class="icon change-password">Parooli vahetamine</li>
+<!--                        <li class="icon authorized-keys">Minu SSH võtmed</li> -->
                         <a href="http://lauri.vosandi.com/2014/09/swish.html" target="_blank">
                             <li class="icon web">Võrguketta haakimine kodusest arvutist</li>
                         </a>
@@ -79,13 +91,13 @@
                 
                 <section id="log-in" style="display:none;">
                     <input type="text" class="icon user" placeholder="Kasutajanimi" pattern="[a-z][a-z0-9]+" required/>
-                    <input type="password" class="icon password" placeholder="Parool" pattern="[A-Za-z0-9@#$%^&+=]{8,}$" required/>
+                    <input type="password" placeholder="Parool" pattern="[A-Za-z0-9@#$%^&\+=]{8,}$" required/>
                     <button class="icon log-in">Logi sisse</button>
                 </section>
 
                 <section id="domains" style="display:none;">
-                    <h1>Minu asutused</h1>
-                    <input type="search" class="icon search" placeholder="Karula Põhikool"/>
+                    <h>Minu asutused</h>
+                    <input type="search" placeholder="Karula Põhikool"/>
                     <ul></ul>
                     <div class="button-group">
                         <button class="icon back">Tagasi</button>
@@ -94,47 +106,58 @@
                 </section>
         
                 <section id="edit-profile" style="display:none;">
-                    <h1>Detailid</h1>
-                    <div class="icon user">blah</div>
-                    <div class="icon home">/home/blah</div>
-                    <input class="icon name" type="text" placeholder="Mati Malakas"
-                        pattern="[A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u01BA]+([\-\ ][A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u01BA]+)+"/>
-                    <input class="icon mobile" type="tel" placeholder="+372 5678 9012"/>
+                    <h>Detailid</h>
+                    <div class="icon user" title="See on sinu kasutajanimi">blah</div>
+                    <div class="icon home" title="See on sinu kodukataloog">/home/blah</div>
+                    <div class="icon date password-modified">Password not changed</div>
                     
-                    <input type="date" class="icon born" placeholder="Sünnikuupäev"/>
-                    <!--
-                    <select class="gender" placeholder="Sugu">
-                        <option value="M">Mees</option>
-                        <option value="F">Naine</option>
-                    </select>
-                    -->
-                    
-                    <h1>Grupid</h1>
+                    <form action="">
+                        <!--
+                        Editing CN is complex, requires probably renaming
+                        <input name="cn" class="icon name" type="text" placeholder="Mati Malakas"
+                            pattern="[A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u01BA]+([\-\ ][A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u01BA]+)+"/>
+                        -->
+                        <input name="mobile" type="tel" placeholder="+372 5678 9012" pattern="\+[0-9]+( [0-9]+)+"/>
+                        <input name="email" type="email" placeholder="eesnimi.perenimi@example.com"/>
+                        <input name="born" type="date" placeholder="Sünnikuupäev"/>
+
+                        <div class="two-column">
+                            <input type="radio" id="edit-profile-gender-female" name="gender" value="F"/>
+                            <label for="edit-profile-gender-female">Naine</label>
+                            <input type="radio" id="edit-profile-gender-male" name="gender" value="M"/>
+                            <label for="edit-profile-gender-male">Mees</label>
+                        </div>
+
+                        <div class="button-group">
+                            <button type="submit" class="icon save">Salvesta</button>
+                            <button type="button" class="icon back">Tagasi</button>
+                        </div>
+                    </form>                    
+<!--                    <h>Grupid</h>
                     <div class="groups">
                     </div>
+                    -->
 
 
                     
-                    <div class="button-group">
-                        <button class="icon save">Salvesta</button>
-                        <button class="icon back">Tagasi</button>
-                    </div>
+
                 </section>
                 
                 <section id="change-password" style="display:none;">
-                    <h1>Vaheta parooli</h1>
-                    <label for="change-password-current">Praegune parool</label>
-                    <input id="change-password-current" type="password" class="current" placeholder="Praegune parool"/>
-                    <input type="password" class="new" placeholder="Uus parool"/>
-                    <input type="password" class="confirm" placeholder="Uue kinnitus"/>
-                    <div class="button-group">
-                        <button class="icon change-password">Vaheta parooli!</button>
-                        <button class="icon back">Tagasi</button>
-                    </div>
+                    <h>Vaheta parooli</h>
+
+                    <form>
+                        <input type="password" class="icon password new" name="password" placeholder="Uus parool" pattern="[A-Za-z0-9@#$%^&+=]{8,}$" required/>
+                        <input type="password" class="icon password confirm" placeholder="Parooli kinnitus" pattern="[A-Za-z0-9@#$%^&+=]{8,}$" required/>
+                        <div class="button-group">
+                            <button type="submit" class="icon change-password">Vaheta parooli!</button>
+                            <button type="button" class="icon back">Tagasi</button>
+                        </div>
+                    </form>
                 </section>
 
                 <section id="users" style="display:none;">
-                    <h1>Kasutajad</h1>
+                    <h>Kasutajad</h>
                     <input type="search" class="icon search" placeholder="Mati Malakas"/>
                     <ul>
                         <div class="details" style="display:none;">
@@ -154,12 +177,12 @@
                 </section>
                 
                 <section id="authorized-keys" style="display:none;">
-                    <h1>Lubatud SSH võtmed</h1>
+                    <h>Lubatud SSH võtmed</h>
                     <ul>
                     </ul>
                     <div class="status">Laadin võtmeid... </div>
                     
-                    <h1>Võtme lisamine</h1>
+                    <h>Võtme lisamine</h>
                     <form>
                         <input type="text" class="icon authorized-key" placeholder="ssh-rsa AAAAB3NzaC1yc2EA... kasutaja@masin"/>
                         <div class="button-group">

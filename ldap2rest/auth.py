@@ -1,13 +1,25 @@
-import falcon
-import re
+
+import base64
 import Cookie
+import falcon
+import hashlib
+import ldap
 import hashlib
 import random
-import ldap
+import re
 from util import dn2domain, domain2dn
 from datetime import datetime
-from settings import COOKIE_SECRET, COOKIE_LIFETIME, ADMINS, BASE_DOMAIN
-import base64
+from settings import COOKIE_SECRET, COOKIE_LIFETIME, ADMINS, \
+    LDAP_BASE_DOMAIN, \
+    LDAP_USER_ATTRIBUTE_USERNAME, \
+    LDAP_USER_ATTRIBUTE_UID, \
+    LDAP_USER_ATTRIBUTE_GID, \
+    LDAP_USER_ATTRIBUTE_HOME_DIRECTORY, \
+    LDAP_USER_ATTRIBUTE_RECOVERY_EMAIL, \
+    LDAP_USER_ATTRIBUTE_MOBILE, \
+    LDAP_USER_ATTRIBUTE_BORN, \
+    LDAP_USER_ATTRIBUTE_GENDER
+
 
 class User(object):
     """
@@ -15,15 +27,28 @@ class User(object):
     """
     @classmethod
     def _get(cls, conn, dn, scope, filters):
-        user_fields = "cn", "uid", "uidNumber", "gidNumber", "homeDirectory", "modifyTimestamp"
+        user_fields = "cn", "modifyTimestamp", \
+            LDAP_USER_ATTRIBUTE_USERNAME, \
+            LDAP_USER_ATTRIBUTE_UID, \
+            LDAP_USER_ATTRIBUTE_GID, \
+            LDAP_USER_ATTRIBUTE_HOME_DIRECTORY, \
+            LDAP_USER_ATTRIBUTE_RECOVERY_EMAIL, \
+            LDAP_USER_ATTRIBUTE_MOBILE, \
+            LDAP_USER_ATTRIBUTE_BORN, \
+            LDAP_USER_ATTRIBUTE_GENDER
         args = dn, scope, filters, user_fields
         for dn, attributes in conn.search_s(*args):
-            return cls(dn,
-                username   = attributes.get("uid").pop(),
-                uid        = int(attributes.get("uidNumber").pop()),
-                gid        = int(attributes.get("gidNumber").pop()),
-                home       = attributes.get("homeDirectory").pop(),
+            return cls(
+                dn.decode("utf-8"),
                 cn         = attributes.get("cn", [None]).pop(),
+                username   = attributes.get(LDAP_USER_ATTRIBUTE_USERNAME).pop(),
+                born       = attributes.get(LDAP_USER_ATTRIBUTE_BORN).pop(),
+                gender     = attributes.get(LDAP_USER_ATTRIBUTE_GENDER).pop(),
+                uid        = int(attributes.get(LDAP_USER_ATTRIBUTE_UID).pop()),
+                gid        = int(attributes.get(LDAP_USER_ATTRIBUTE_GID).pop()),
+                home       = attributes.get(LDAP_USER_ATTRIBUTE_HOME_DIRECTORY).pop(),
+                email      = attributes.get(LDAP_USER_ATTRIBUTE_RECOVERY_EMAIL, [None]).pop(),
+                mobile     = attributes.get(LDAP_USER_ATTRIBUTE_MOBILE, [None]).pop(),
                 modified   = datetime.strptime(attributes.get("modifyTimestamp").pop(), "%Y%m%d%H%M%SZ"))
         else:
             raise falcon.HTTPForbidden(
@@ -37,10 +62,19 @@ class User(object):
         return cls._get(conn, dn, ldap.SCOPE_BASE, "(objectClass=posixAccount)")
 
     @classmethod
-    def get_by_uid(cls, conn, dn):
-        return cls._get(conn, domain2dn(BASE_DOMAIN), ldap.SCOPE_SUBTREE, "(objectClass=posixAccount)")
+    def get_by_uid(cls, conn, username):
+        return cls._get(conn, domain2dn(LDAP_BASE_DOMAIN), ldap.SCOPE_SUBTREE, "(&(objectClass=posixAccount)(uid=%s))" % username)
     
-    def __init__(self, dn, username, uid, gid, home, cn, modified):
+    def __init__(self, dn, username, uid, gid, home, cn, email, mobile, born, gender, modified):
+        assert isinstance(dn, unicode)
+        assert isinstance(username, str)
+        assert isinstance(uid, int)
+        assert isinstance(gid, int)
+        assert isinstance(home, str)
+        assert not email or isinstance(email, str)
+        assert not modified or isinstance(modified, datetime)
+        assert not gender or gender in "MF"
+        
         self.dn = dn
         m = re.match("cn=(.+?),ou=people,(.+)$", dn)
         self.cn, dcs = m.groups()
@@ -49,28 +83,34 @@ class User(object):
         self.uid = uid
         self.gid = gid
         self.cn = cn
+        self.born = born
+        self.home = home
         self.modified = modified
+        self.mobile = mobile
+        self.email = email
+        self.gender = gender
         
     def serialize(self):
         return dict(
-            domain = self.domain,
-            username = self.username,
-            uid = self.uid,
-            gid = self.gid,
-            cn = self.cn)
+            cn = self.cn, domain = self.domain, username = self.username,
+            uid = self.uid, gid = self.gid, home = self.home,
+            email = self.email, mobile=self.mobile,
+            born = self.born, gender=self.gender)
         
     def generate_token(self, created=None):
         if not created:
             created = datetime.utcnow()
+        assert isinstance(COOKIE_SECRET, str)
+        encoded_dn = base64.b64encode(self.dn.encode("utf-8"))
         expires = (created + COOKIE_LIFETIME)
         created = created.strftime("%s")
         digest = hashlib.sha1()
-        digest.update(self.username)
+        digest.update(encoded_dn)
         digest.update("|")
         digest.update(created)
         digest.update("|")
         digest.update(COOKIE_SECRET)
-        return "%s,%s,%s" % (base64.b64encode(self.dn), created, digest.hexdigest()), expires
+        return "%s,%s,%s" % (encoded_dn, created, digest.hexdigest()), expires
 
 def authenticate(func):
     def wrapped(resource, req, resp, **kwargs):
@@ -92,7 +132,10 @@ def authenticate(func):
         dn, created, digest = m.groups()
 
         # Get user profile by distinguished name as pointed out by cookie
-        user = User.get_by_dn(resource.conn, base64.b64decode(dn))
+        try:
+            user = User.get_by_dn(resource.conn, base64.b64decode(dn))
+        except ldap.INVALID_DN_SYNTAX:
+            raise falcon.HTTPForbidden("Error", "Invalid distinguished name embedded in the token")
         
         # Validate token hash
         created = datetime.fromtimestamp(int(created))
@@ -111,6 +154,11 @@ def authenticate(func):
             
         r = func(resource, req, resp, **kwargs)
         return r
+        
+    # Pipe API docs
+    wrapped._apidoc = getattr(func, "_apidoc", {})
+    wrapped._apidoc["authenticate"] = "yes"
+    wrapped.__doc__ = func.__doc__
     return wrapped
     
 def authorize_domain_admin(func):
@@ -141,6 +189,11 @@ def authorize_domain_admin(func):
             raise falcon.HTTPForbidden("Error", "Not domain admin")
         r = func(instance, req, resp, **kwargs)
         return r
+
+    # Pipe API docs
+    wrapped._apidoc = getattr(func, "_apidoc", {})
+    wrapped._apidoc["authorize"] = "domain-admin"
+    wrapped.__doc__ = func.__doc__
     return wrapped
     
 def authorize_owner(func):
@@ -149,16 +202,18 @@ def authorize_owner(func):
     """
     def wrapped(instance, req, resp, **kwargs):
         authenticated_user = kwargs.get("authenticated_user", None)
-        requested_user = kwargs.get("user", None)
+        requested_username = kwargs.get("username", None)
         if not authenticated_user:
             raise falcon.HTTPBadRequest("Error", "Not authenticated")
         if not requested_username:
             raise falcon.HTTPBadRequest("Error", "No requested user specified")
-        if requested_username != authenticated_user:
+        if requested_username != authenticated_user.username:
             raise falcon.HTTPBadRequest("Error", "Trying to access resource not owned by user")
 
         r = func(instance, req, resp, **kwargs)
         return r
+    wrapped._apidoc = getattr(func, "_apidoc", {})
+    wrapped._apidoc["authorize"] = "owner"
     return wrapped
     
 def generate_password(length):

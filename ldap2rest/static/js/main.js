@@ -97,22 +97,36 @@ function onLogin(status, me) {
 }
 
 function onProfileLoaded(status, me) {
+    console.info(me);
     if (status == 200) {
+        window.ME = me;
+
         $("#profile .user").html(me.cn);
-        $("#edit-profile .user").html(me.cn);
+        $("#edit-profile .user").html(me.username);
         $("#edit-profile .home").html(me.home);
-        $("#edit-profile .mobile").val(me.mobile);
-        $("#edit-profile .gender").val(me.gender);
-        $("#edit-profile .born").val(me.born);
-        $("#edit-profile .name").attr("placeholder", me.cn).val(me.cn);
+        $("#edit-profile input[name='mobile']").val(me.mobile);
+        $("#edit-profile input[name='gender'][value='" + me.gender + "']").prop("checked", true);
+        $("#edit-profile input[name='born']").val(me.born);
+//        $("#edit-profile input[name='cn']").val(me.cn); TODO: CN edit requires object rename?
+        $("#edit-profile input[name='email']").val(me.email);
+        if (me.password_modified) {
+            $("#edit-profile .date.password-modified").show().html(me.password_modified);
+        } else {
+            $("#edit-profile .date.password-modified").hide();
+        }
 
         $("content section").hide();
         $("#profile").show();
         $("#home").show();
         
+       
         if (me.managed_domains) {
+            $("#home .managed-domains").show();
             onDomainsLoaded(me.managed_domains);
+        } else {
+            $("#home .managed-domains").hide();
         }
+        
         console.info("Profile loaded:", status, me);
         
         ldap.groups(function(status, groups) {
@@ -149,21 +163,15 @@ $(document).ready(function() {
     ldap = new LDAP("/api");
     ldap.profile(onProfileLoaded);
     
-
-    
-    
     // Prefill username field in log-in view    
     if (localStorage.username) {
         $("#log-in .user").val(localStorage.username);
     }
 
     // Bind home screen links    
-    $("#home .change-password").click(function() {
-        $("content section").hide();
-        $("#change-password").show();
-    });
+
     
-    $("#home .my-domains").click(function() {
+    $("#home .managed-domains").click(function() {
         $("content section").hide();
         $("#domains").show();
     });
@@ -171,14 +179,83 @@ $(document).ready(function() {
     $("#home .edit-profile").click(function() {
         $("content section").hide();
         $("#edit-profile").show();
-        
-       
-        $("#edit-profile .back").unbind().click(function() {
-            $("content section").hide();
-            $("#home").show();
+    });
+    
+    $("#edit-profile form").submit(function(e) {
+        e.preventDefault();
+        $("#edit-profile .save").addClass("busy");
+        ldap.query("PUT", "/session/", $("#edit-profile form").serialize(), function(status, response) {
+            $("#edit-profile .save").removeClass("busy");
+            if (status != 200) {
+                alert(response.description);
+            } else {
+                $("#edit-profile .back").trigger("click");
+            }
+
         });
     });
+   
+    $("#edit-profile .back").click(function(e) {
+        e.preventDefault();
+        $("content section").hide();
+        $("#home").show();
+    });
+    
+    
+    /**
+     * Password change view
+     */
+    $("#change-password form").submit(function(e) {
+        e.preventDefault();
+        if ($("#change-password .new").val() != $("#change-password .confirm").val()) {
+            alert("Paroolid ei klapi!");
+            return;
+        }
 
+        $("#change-password button.change-password").addClass("busy");
+        
+        ldap.set_password(ME.domain, ME.username, $(this).serialize(), function(status, response) {
+
+            $("#change-password button.change-password").removeClass("busy");
+            if (status == 200) {
+                $("#change-password .back").trigger("click");
+            } else {
+                alert(response.description);
+            }
+        });
+        
+    $("#users .details .change-password").click(function() {
+        var newPass = $("#users .details .password-new").val()
+        if (newPass != $("#users .details .password-confirm").val()) {
+            alert("It is not the same!");
+            return;
+        }
+        if (newPass.length < 8) {
+            alert("Liiga lühike parool.");
+            return;
+        } 
+        console.log(newPass);       
+    });
+
+    });
+    
+    $("#home .change-password").click(function() {
+        $("content section").hide();
+        $("#change-password").show();
+        $("#change-password form .new").val("");
+        $("#change-password form .confirm").val("");
+    });
+    
+    $("#change-password .back").click(function() {
+        $("content section").hide();
+        $("#home").show();
+    });
+    
+
+
+    /**
+     * Authorized SSH keys view
+     */
     $("#home .authorized-keys").click(function(e) {
         // Juggle views
         e.preventDefault();
@@ -233,6 +310,10 @@ $(document).ready(function() {
         });
     });
 
+
+    /**
+     * Login
+     */
     $("#profile .log-out").click(function() {
         console.info("Deleting cookie");
         document.cookie = 'token=; Path=/api/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
@@ -243,8 +324,8 @@ $(document).ready(function() {
     
     $("#log-in .log-in").click(function() {
         var username = $("#log-in .user").val();
-        var password = $("#log-in .password").val();
-        $("#log-in .password").val("");
+        var password = $("#log-in input[type='password']").val();
+        $("#log-in input[type='password']").val("");
         ldap.bind(username, password, onLogin);
     });
     
@@ -265,29 +346,35 @@ $(document).ready(function() {
         bits = bits.split(" ");
         $("#add-user .user").val(bits[0][0] + bits[bits.length-1] + $("#add-user .id-lookup").val().substring(7));
     }
+    
+    
+    /**
+     * User list view
+     */
 
     $("#add-user .id-lookup").change(function() {
         $("#add-user .id-lookup").addClass("busy");
-        $("#add-user .name").val("");
-        $("#add-user .e-mail").val("");
-        $("#add-user .mobile").val("");
+        $("#add-user form input[name='cn']").val("");
+        $("#add-user form input[name='email']").val("");
+        $("#add-user form input[name='mobile']").val("");
         $("#add-user .extra").fadeIn();
         var id = $(this).val();
         ldap.lookup(id, function(status, details) {
             $("#add-user .id-lookup").removeClass("busy");
-            $("#add-user .extra").fadeOut();
             if (id in details) {
-                $("#add-user .name").val(details[id].gn + " " + details[id].sn);
-                $("#add-user .user").val(details[id].username);
-                $("#add-user .e-mail").val(details[id].email);
+                $("#add-user form input[name='cn']").val(details[id].gn + " " + details[id].sn);
+                $("#add-user form input[name='username']").val(details[id].username);
+                $("#add-user form input[name='email']").val(details[id].email);
                 onAddUserNameChanged();
             }
         });
     });
     
-    $("#add-user .name").change(onAddUserNameChanged);
+    // Full name change causes regeneration of suggested username
+    $("#add-user form input[name='cn']").change(onAddUserNameChanged);
     
-    $("#add-user .e-mail").change(function() {
+    // E-mail change causes e-mail notification tick/untick and enable/disable
+    $("#add-user form input[name='email']").change(function() {
         if ($(this).val() == "") {
             $("#add-user-notify").prop('disabled', true);
             $("#add-user-notify").prop('checked', false);
@@ -297,16 +384,16 @@ $(document).ready(function() {
         }
     });
 
-    
     // Bind form submission button
-    $("#add-user form").submit(function(event) {
+    $("#add-user form").submit(function(e) {
+        e.preventDefault();
         $("#add-user .add-user").addClass("busy");
-        event.preventDefault();
         ldap.add_user($("#add-user .domain").val(), $("#add-user form").serialize(), function(status, u) {
             $("#add-user .add-user").removeClass("busy");
             if (status != 200) {
                 alert(u.description);
             } else {
+                $("#add-user .extra").fadeOut();
                 console.info("User added:", status, u);
                 $('#add-user form').trigger("reset");
                 onUserLoaded(u);
@@ -314,22 +401,12 @@ $(document).ready(function() {
         });
     });
     
-
-
-    
-    $("#change-password .back").click(function() {
-        $("content section").hide();
-        $("#home").show();
-    });
-    
-    $("#users .back").click(function() {
-        
-    });
-    
+    // Bind user lock button
     $("#users .details .lock").click(function() {
         ldap.lock_user($(this).attr("data-domain"), $(this).attr("data-username"));
     });
     
+    // Bind user delete button
     $("#users .details .userdel").click(function() {
         var $selected = $("#users ul li.selected");
 
@@ -351,6 +428,7 @@ $(document).ready(function() {
         }
     });
     
+    // Bind user password reset button
     $("#users .details .reset-password").click(function() {
         var $selected = $("#users ul li.selected");
 
@@ -367,31 +445,24 @@ $(document).ready(function() {
         }
     });
 
-    $("#users .details .change-password").click(function() {
-        var newPass = $("#users .details .password-new").val()
-        if (newPass != $("#users .details .password-confirm").val()) {
-            alert("It is not the same!");
+    // Bind user search box   
+    $("#users .search").on("keyup", function(e) {
+
+        if (e.keyCode != 13) {
             return;
         }
-        if (newPass.length < 8) {
-            alert("Liiga lühike parool.");
-            return;
-        } 
-        console.log(newPass);       
-    });
-    
-    $("#users .search").on("search", function(e) {
-       var query = $("#users .search").val().toLowerCase();
-       var count = 0;
-       $("#users ul li.user").each(function(index) {
-           if ($(this).attr("data-cn").toLowerCase().indexOf(query) >= 0) {
-               count++;
-               $(this).show();
-           } else {
-               $(this).hide();
-           }
-       });
-       $("#users .status").html("Leitud " + count + " kasutajat");
+        var query = $("#users .search").val().toLowerCase();
+        console.info("Searching for:", query);
+        var count = 0;
+        $("#users ul li.user").each(function(index) {
+            if ($(this).attr("data-cn").toLowerCase().indexOf(query) >= 0 || $(this).attr("data-username").toLowerCase().indexOf(query) >= 0) {
+                count++;
+                $(this).show();
+            } else {
+                $(this).hide();
+            }
+        });
+        $("#users .status").html("Leitud " + count + " kasutajat");
    });
 });
 
