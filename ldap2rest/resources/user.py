@@ -89,12 +89,12 @@ class UserListResource:
     @authorize_domain_admin
     @validate("group",     r"[a-z]{1,32}$", required=False, help="Primary group")
     @validate("id",        r"[3-6][0-9][0-9][01][0-9][0-3][0-9][0-9][0-9][0-9][0-9]$", required=False, help="National identification number")
-    @validate("username", RE_USERNAME, required=True, help="Username")
-    @validate("batch", RE_CHECKBOX, r"on$", required=False, help="Batch addition, don't send email notifications to admin")
-    @validate("notify", RE_CHECKBOX, r"on$", required=False, help="Notify added user via e-mail")
-    @validate("cn", required=False, help="Full name")
-    @validate("email", RE_EMAIL, required=False, help="E-mail address for password recovery")
-    @validate("mobile", RE_PHONE, required=False, help="Mobile phone number")
+    @validate("username",  RE_USERNAME, required=True, help="Username")
+    @validate("batch",     RE_CHECKBOX, required=False, help="Batch addition, don't send email notifications to admin")
+    @validate("notify",    RE_CHECKBOX, required=False, help="Notify added user via e-mail")
+    @validate("cn",        required=False, help="Full name")
+    @validate("email",     RE_EMAIL, required=False, help="E-mail address for password recovery")
+    @validate("mobile",    RE_PHONE, required=False, help="Mobile phone number")
     def on_post(self, req, resp, authenticated_user, domain=LDAP_BASE_DOMAIN):
         """
         Add user to domain

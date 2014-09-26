@@ -50,8 +50,8 @@
                             <input type="tel" name="mobile" title="Mobiiltelefoni number" placeholder="+372 5678 9120"/>
                             <select name="group" class="icon group" placeholder="Primaarne grupp">
                             </select>
-                            <input name="notify" type="checkbox" id="add-user-notify" title="Teavita lisatavat kasutajal ülal sisestatud e-posti teel tema kasutajanimest ning paroolist."/>
-                            <label for="add-user-notify" checked>Teavita e-posti teel</label>
+                            <input name="notify" type="checkbox" id="add-user-notify"/>
+                            <label for="add-user-notify" title="Teavita lisatavat kasutajal ülal sisestatud e-posti teel tema kasutajanimest ningparoolist" checked>Teavita e-posti teel</label>
                         </div>
                         <button type="submit" class="icon add-user">Lisa kasutaja</button>
                     </form>
@@ -117,7 +117,7 @@
                         <input name="cn" class="icon name" type="text" placeholder="Mati Malakas"
                             pattern="[A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u01BA]+([\-\ ][A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u01BA]+)+"/>
                         -->
-                        <input name="mobile" type="tel" placeholder="+372 5678 9012" pattern="\+[0-9]+( [0-9]+)+"/>
+                        <input name="mobile" type="tel" placeholder="+372 5678 9012" pattern="\+[0-9]+( ?[0-9]+)+"/>
                         <input name="email" type="email" placeholder="eesnimi.perenimi@example.com"/>
                         <input name="born" type="date" placeholder="Sünnikuupäev"/>
 

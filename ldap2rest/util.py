@@ -56,7 +56,7 @@ def serialize(func):
     Falcon response serialization
     """
     def wrapped(instance, req, resp, **kwargs):
-        assert req.get_param("unicode") == u"✓", "Unicode sanity check failed"
+        assert not req.get_param("unicode") or req.get_param("unicode") == u"✓", "Unicode sanity check failed"
         
         # Default to no caching of API calls
         resp.set_header("Cache-Control", "no-cache, no-store, must-revalidate");
