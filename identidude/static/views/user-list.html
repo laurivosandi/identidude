@@ -1,0 +1,33 @@
+<h>Accounts</h>
+
+<input onkeyup="userSearch(this);" type="search" class="icon search" placeholder="Mati Malakas"/>
+
+<ul>
+
+<!-- Users -->
+{% for user in session.users %}
+<li data-username="{{ user.name }}" data-keywords="{{user.name}}|{{user.gn}}|{{user.sn}}|{{user.mail}}" onClick="onUserClicked(this);" class="icon user {% if user.locked or "Domain Users" not  in user.groups %}disabled{% endif %}">
+{% if user.gn and user.sn %}
+  {{ user.gn }} {{ user.sn }}
+{% else %}
+  {{ user.name }}
+{% endif %}
+</li>
+{% endfor %}
+
+<!-- Groups -->
+{% for group in session.groups | sort(attribute='name') %}
+<li data-keywords="{{group.name}}" class="icon group">
+{{ group.name }}
+</li>
+{% endfor %}
+
+<!-- Computers -->
+{% for computer in session.computers | sort(attribute='name') %}
+<li data-keywords="{{computer.name}}" class="icon computer {{computer.os_type}} {% if computer.locked %}disabled{% endif %}"
+  title="{{ computer.name }}{% if computer.os %} running {{ computer.os }} {{ computer.os_version }}{% endif %}">
+{{ computer.fqdn }}
+</li>
+{% endfor %}
+</ul>
+

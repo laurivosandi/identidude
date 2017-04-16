@@ -1,0 +1,141 @@
+* {
+    padding: 0;
+    margin: 0;
+    font-family: 'Droid Sans', sans-serif;
+}
+
+textarea {
+    resize: none;
+    height: 10em;
+    display: block;
+    width: 100%;
+    margin: 0.5em 0;
+    white-space: pre;
+    font-family: monospace;
+}
+
+.status {
+    text-align: center;
+}
+
+h, h1 {
+    font-size: 7mm;
+}
+
+select:required:invalid {
+  color: gray;
+}
+
+label {
+    margin: 0;
+    width: auto;
+}
+
+button {
+
+    display: inline-block !important;
+}
+
+button,
+input,
+div,
+p,
+label,
+select {
+    font-size: 5mm;
+}
+
+
+
+ul {
+    list-style: none;
+    padding: 0;
+    min-height: 10em;
+}
+
+ul a {
+    text-decoration: none;
+}
+
+ul li {
+    color: #000;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    border-top: 1px dotted #ddd;
+    text-shadow: 0px 0px 4px #fff;
+}
+
+ul li.selected {
+    border-top: 1px solid #888;
+}
+
+ul li.selected,
+#users .details {
+    background-color: #eef;
+}
+
+#users .details {
+    padding: 4px 12px;
+    border-top: 1px dotted #ddd;
+    border-bottom: 1px solid #888;
+}
+
+#profile,
+#login {
+    margin-bottom: 8px;
+}
+
+
+#profile .home,
+#users .home {
+    overflow: hidden;
+    overflow-x: auto;
+}
+
+section {
+    margin-bottom: 10mm;
+}
+
+header {
+    background: #222222;
+    color: #fff;
+}
+
+container {
+    display: block;
+    max-width: 60em;
+    margin: 0 auto;
+    padding: 8px;
+
+}
+
+content {
+    display: block;
+}
+
+.two-column {
+    -webkit-column-count: 2;
+    -moz-column-count: 2;
+    column-count: 2;
+    -webkit-column-fill: auto;
+    -moz-column-fill: auto;
+    column-fill: auto;
+}
+
+.two-column * {
+    margin: 0;
+}
+
+@media screen and (min-width:52em) {
+    aside {
+        float: right;
+        width: 20em;
+    }
+    section {
+        margin-right: 22em;
+        max-width: 100%;
+    }
+}
+

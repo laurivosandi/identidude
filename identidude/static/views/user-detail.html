@@ -1,0 +1,59 @@
+<h><img src="{{ user.avatar }}"/> {{ user.name }}</h>
+
+<form autocomplete="off">
+
+
+    <input name="gn" class="icon" type="text" placeholder="Given name" value="{{ user.gn }}"/>
+    <input name="sn" class="icon" type="text" placeholder="Surname" value="{{ user.sn }}"/>
+
+    <input name="mail" class="icon mail" type="mail" value="{{ user.mail }}" placeholder="Primary e-mail address, change to enable forwarding"/>
+
+    <input name="mobile" class="icon phone" type="tel" value="{{ user.mobile }}" placeholder="Cell phone"/>
+
+    <input id="profile_locked" type="checkbox" name="locked"{% if user.locked %} checked{% endif %}/>
+    <label for="profile_locked" title="Locked user may not log in, user account and password will be preserved">Account locked</label>
+
+    <input id="profile_password_expires" type="checkbox" name="password_expires"{% if user.password_expires %} checked{% endif %}/>
+    <label for="profile_password_expires" title="Password expires {{ user.password_expired }}, adjust domain password policy to change duration">Password expires <time>{{ user.password_expired }}</time></label>
+
+
+    <input id="profile_password_reset" type="checkbox" name="password_reset"/>
+    <label for="profile_password_reset" title="Reset password and send random generated password via e-mail">Reset password</label>
+    <input name="recovery_mail" class="icon mail" type="mail" value="{{ user.recovery_mail }}" placeholder="Password recovery e-mail" title="Recovery e-mail is used to reset password"/>
+    <input name="password" autocomplete="new-password" type="password" class="icon password" placeholder="Random generated password" pattern="[A-Za-z0-9@#$%^&+=]{8,}$"/>
+
+<!-- Don't indent! -->
+<textarea name="ssh_public_keys" placeholder="ssh-rsa ... user@hostname">{% for key in user.ssh_keys %}{{key}}
+{% endfor %}</textarea>
+{% for cert in user.certificates %}
+<p class="icon certificate" title="{{ cert.subject }}">{{ cert.common_name }}</p>
+{% endfor %}
+
+</form>
+
+<button class="icon back" onClick="userCancel();">Cancel</button>
+<button class="icon save" onClick="userSave(this);">Save</button>
+<button class="icon user delete" onClick="userDelete(this);">Delete</button>
+
+<div>
+<h>Useful commands</h>
+
+<pre>
+# To fetch X509 certificates
+curl {{ window.location.origin }}/api/{{ user.name }}.pem
+
+# To fetch SSH public keys
+curl {{ window.location.origin }}/api/{{ user.name }}.keys
+
+# To fetch SSH public keys and X509 counterparts
+curl {{ window.location.origin }}/api/{{ user.name }}.keys?x509=1
+
+# To upload current user keys
+kinit {{ user.name }}
+curl -u : --negotiate --delegation always --data-binary @$HOME/.ssh/authorized_keys {{ window.location.origin }}/api/{{ user.name }}.keys
+
+# To upload certificates from ID-card
+pkcs15-tool -r 1 > auth.pem
+curl -u : --negotiate --delegation always --data-binary @auth.pem {{ window.location.origin }}/api/{{ user.name }}.pem
+</pre>
+</div>

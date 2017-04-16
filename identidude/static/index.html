@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta name="viewport" content="width=device-width, maximum-scale=1.0, initial-scale=1.0, user-scalable=no"/>
+        <meta charset="utf-8"/>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <link href='//fonts.googleapis.com/css?family=Droid+Sans' rel='stylesheet' type='text/css'>
+        <title>Kasutajate haldus</title>
+        <link rel="stylesheet" href="css/icons.css"/>
+        <link rel="stylesheet" href="css/forms.css"/>
+        <link rel="stylesheet" href="css/style.css"/>
+        <script type="text/javascript" src="js/jquery-2.1.4.min.js"></script>
+        <script type="text/javascript" src="js/nunjucks.min.js"></script>
+        <script type="text/javascript" src="js/main.js"></script>
+        <!--[if lt IE 11]>
+        <script>
+        alert("Teie veebilehitseja on ajast ja arust. Palun kasutage Mozilla Firefox, Google Chrome, Chromium, Internet Explorer 11 või mõnda muud modernset veebilehitsejat!");
+        window.location = "http://browserchoice.eu/";
+        </script>
+        <![endif]-->
+    </head>
+    <body onhashchange="onHashChanged();">
+        <header>
+            <container>
+                <h>Identity management</h>
+            </container>
+        </header>
+        <container id="users">
+            <aside>
+                <div id="add-user"></div>
+            </aside>
+            <section>
+            </section>
+        </container>
+        <container id="profile">
+        </container>
+    </body>
+</html>
+

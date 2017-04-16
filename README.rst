@@ -1,7 +1,7 @@
-LDAP to RESTful API bridge
-==========================
+Active Directory/Samba web interface
+====================================
 
-This is a simple Falcon based API for easily manipulating data in LDAP server.
+This is a simple Falcon based web interface for easily manipulating data in domain controller.
 
 Features
 
@@ -9,29 +9,35 @@ Features
 * Delete users
 * Reset password
 
-Requirements:
+Setup
+-----
 
-* A LDAP server
-* A SMTP server
-* A web server
+Use clean Ubuntu 16.04 virtual machine.
 
-Dependencies:
+Bootstrap installation by running:
 
-.. code:: bash
+  identidude -d example.lan -w WORKGROUP -u Administrator
 
-    apt-get install python-pip python-dev cython python-ldap swig2.0 swig python-lxml
-    pip install falcon jinja2 M2Crypto
+During this several procedures are performed:
 
-Screenshots:
+* Necessary software packages are installed
+* Domain administrator password will be prompted
+* Samba suite is configured to behave as domain member
+* Computer is joined to domain
+* HTTP service principal is created
+* Cronjob for updating LDAP service ticket is created
+* systemd service files are created
 
-.. figure:: http://lauri.vosandi.com/cache/f47f9aa9a89a6f3a711ec299124cdb46.png
+Finally start the service:
 
-    Home screen has links to the main editable resources, nothing excessive
+  systemctl start identidude
 
-.. figure:: http://lauri.vosandi.com/cache/99f082379b3fcbb04826039ef447fb16.png
+For debugging:
 
-    Domains are abstracted as list of organizations
+  journalctl -f
 
-.. figure:: http://lauri.vosandi.com/cache/425ef14896db38f0c3db24c66d053cd7.png
+Point your web browser to the id.example.lan, if necessary configure
+credential delegation on your web browser.
+To prevent domain administrator account abuse configure
+user management delegation for your account.
 
-    Users can be added by Estonian national identification number
